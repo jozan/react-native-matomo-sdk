@@ -41,17 +41,39 @@ const matomoConfig =
 
 Matomo.initialize(matomoConfig.baseUrl, matomoConfig.siteId)
   .catch(error => console.warn('Failed to initialize matomo', error))
-  .then(() =>
-    Matomo.trackEvent('Application', 'Startup').catch(error =>
-      console.warn('Failed to track event', error),
-    ),
-  );
+  .then(async () => {
+    try {
+      // For more info about custom dimensions: https://matomo.org/docs/custom-dimensions/
+      await Matomo.setCustomDimension(1, '1.0.0').catch(error =>
+        console.warn('Error setting custom dimension', error),
+      );
+
+      await Matomo.setCustomDimension(2, 'en-US').catch(error =>
+        console.warn('Error setting custom dimension', error),
+      );
+
+      Matomo.trackEvent('Application', 'Startup').catch(error =>
+        console.warn('Failed to track event', error),
+      );
+    } catch (error) {
+      console.error('Error in Matomo SDK', error);
+    }
+  });
 
 const App: () => React$Node = () => {
   React.useEffect(() => {
-    Matomo.trackView(['start']).catch(error =>
-      console.warn('Failed to track screen', error),
-    );
+    let run = async () => {
+      // Clear a custom dimension by setting it to null
+      await Matomo.setCustomDimension(2, null).catch(error =>
+        console.warn('Error clearing custom dimension', error),
+      );
+
+      Matomo.trackView(['start']).catch(error =>
+        console.warn('Failed to track screen', error),
+      );
+    };
+
+    run();
   }, []);
 
   return (

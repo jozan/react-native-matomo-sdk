@@ -10,11 +10,16 @@ export function trackView(route) {
 }
 
 export function trackEvent(category, event, name, value) {
-  return RNMatomoSdk.trackEvent(category, event, {name: name, value: value});
+  return RNMatomoSdk.trackEvent(category, event, { name: name, value: value });
+}
+
+export function setCustomDimension(id, value) {
+  return RNMatomoSdk.setCustomDimension(id, value);
 }
 
 export default {
   initialize: initialize,
   trackView: trackView,
   trackEvent: trackEvent,
+  setCustomDimension: setCustomDimension,
 };
