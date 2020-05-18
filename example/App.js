@@ -3,7 +3,7 @@
  * https://github.com/facebook/react-native
  *
  * @format
- * @flow
+ * @flow strict-local
  */
 
 import React, {useState, useEffect} from 'react';
@@ -61,6 +61,23 @@ const App: () => React$Node = () => {
     const run = async () => {
       await Matomo.trackEvent('Application', 'Startup').catch(error =>
         console.warn('Failed to track event', error),
+      );
+
+      await Matomo.setCustomDimension(1, '1.0.0').catch(error =>
+        console.warn('Error clearing custom dimension', error),
+      );
+
+      await Matomo.setCustomDimension(2, 'en-US').catch(error =>
+        console.warn('Error clearing custom dimension', error),
+      );
+
+      await Matomo.trackView(['start']).catch(error =>
+        console.warn('Failed to track screen', error),
+      );
+
+      // Clear a custom dimension by setting it to null
+      await Matomo.setCustomDimension(2, null).catch(error =>
+        console.warn('Error clearing custom dimension', error),
       );
 
       await Matomo.trackView(['start']).catch(error =>

@@ -1,8 +1,8 @@
 
 package com.terveystalo.react_native.matomo_sdk;
 
+import androidx.annotation.Nullable;
 import android.text.TextUtils;
-
 import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
@@ -11,10 +11,14 @@ import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.ReadableMap;
 
 import org.matomo.sdk.Matomo;
-import org.matomo.sdk.TrackerBuilder;
 import org.matomo.sdk.Tracker;
+import org.matomo.sdk.TrackerBuilder;
+import org.matomo.sdk.extra.CustomDimension;
+import org.matomo.sdk.extra.DimensionQueue;
 import org.matomo.sdk.extra.TrackHelper;
 
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -24,6 +28,8 @@ public class RNMatomoSdkModule extends ReactContextBaseJavaModule {
 
   private final ReactApplicationContext reactContext;
   private Tracker tracker;
+  private DimensionQueue mOneTimeDimensionQueue;
+  private List<CustomDimension> mCustomDimensions = new ArrayList<>();
 
   public RNMatomoSdkModule(ReactApplicationContext reactContext) {
     super(reactContext);
@@ -59,6 +65,9 @@ public class RNMatomoSdkModule extends ReactContextBaseJavaModule {
         routeList.add(route.getString(i));
       }
       String path = TextUtils.join("/", routeList);
+
+      insertCustomDimensions(tracker);
+
       TrackHelper.track().screen(path).title(path).with(tracker);
       promise.resolve(null);
     } catch(Exception e) {
@@ -77,11 +86,45 @@ public class RNMatomoSdkModule extends ReactContextBaseJavaModule {
       if (optionalParameters.hasKey("value")) {
         event.value((float) optionalParameters.getDouble("value"));
       }
+
+      insertCustomDimensions(tracker);
+
       event.with(tracker);
 
       promise.resolve(null);
     } catch(Exception e) {
       promise.reject(e);
+    }
+  }
+
+  @ReactMethod
+  @SuppressWarnings("unused")
+  public void setCustomDimension(int dimensionId, @Nullable String value, Promise promise) {
+    try {
+      if (value != null) {
+        mCustomDimensions.add(new CustomDimension(dimensionId, value));
+      } else {
+        for (Iterator<CustomDimension> it = mCustomDimensions.iterator(); it.hasNext(); ) {
+          CustomDimension dimension = it.next();
+          if (dimension.getId() == dimensionId) {
+            it.remove();
+          }
+        }
+      }
+      promise.resolve(null);
+    } catch(Exception e) {
+      promise.reject(e);
+    }
+  }
+
+  private void insertCustomDimensions(Tracker tracker) {
+    if (mOneTimeDimensionQueue == null) {
+      mOneTimeDimensionQueue = new DimensionQueue(tracker);
+    }
+
+    for (Iterator<CustomDimension> it = mCustomDimensions.iterator(); it.hasNext(); ) {
+      CustomDimension dimension = it.next();
+      mOneTimeDimensionQueue.add(dimension.getId(), dimension.getValue());
     }
   }
 }
